@@ -5,6 +5,7 @@
 //
 
 const builtin = @import("builtin");
+const assert = @import("std").debug.assert;
 
 /// halt the cpu
 pub inline fn hlt() noreturn {
@@ -31,8 +32,8 @@ pub inline fn hang() noreturn {
 
 pub const port = struct.{
     /// read a byte from the given port
-    pub inline fn read(port: var) u8 {
-        const port_info = @typeInfo(port);
+    pub inline fn read(cpu_port: var) u8 {
+        const port_info = @typeInfo(@typeOf(cpu_port));
         comptime assert(
             port_info == builtin.TypeId.Enum and
             port_info.Enum.tag_type == u16,
@@ -40,29 +41,36 @@ pub const port = struct.{
         return asm volatile(
             "inb %[port], %[result]"
             : [result] "={al}" (-> u8)
-            : [port] "N{dx}" (@enumToInt(port))
+            : [cpu_port] "N{dx}" (@enumToInt(cpu_port))
         );
     }
 
     /// writes a byte to the given port
-    pub inline fn write(port: var, payload: var) void {
-        const port_info = @typeInfo(port);
-        const payload_info = @typeInfo(payload);
+    pub inline fn write(cpu_port: var, data: var) void {
+        const port_info = @typeInfo(@typeOf(cpu_port));
+        const data_info = @typeInfo(@typeOf(data));
         comptime assert(
             port_info == builtin.TypeId.Enum and
-            port_info.tag_type == u16,
+            port_info.Enum.tag_type == u16,
         );
         comptime assert(
-            (payload_info == builtin.TypeId.Enum and
-                payload_info.Enum.tag_type == u8) or
-            (payload_info == builtin.TypeId.Int and
-                payload_info.Int.bits == 8),
+            (data_info == builtin.TypeId.Enum and
+                data_info.Enum.tag_type == u8) or
+            (data_info == builtin.TypeId.Int and
+                data_info.Int.bits == 8),
         );
+
+        const payload = switch (data_info) {
+            builtin.TypeId.Enum => @enumToInt(data),
+            builtin.TypeId.Int => data,
+            else => unreachable,
+        };
+
         asm volatile(
             "outb %[payload], %[port]"
             : 
-            : [payload] "{al}" (@enumToInt(payload)),
-                [port] "N{dx}" (@enumToInt(port))
+            : [payload] "{al}" (payload),
+                [port] "N{dx}" (@enumToInt(cpu_port))
         );
     }
 };

@@ -7,33 +7,31 @@
 const std = @import("std");
 const builtin = @import("builtin");
 
-const Builder = std.build.Builder;
 const ArrayList = std.ArrayList;
 
-fn build_kernel(builder: *Builder, mode: builtin.Mode) []const u8 {
-    const kernel = builder.addObject("boot", "kernel/boot.zig");
-    kernel.setLinkerScriptPath("kernel/linker.ld");
-    kernel.setBuildMode(mode);
-    kernel.setTarget(
-        builtin.Arch.i386,
-        builtin.Os.freestanding,
-        builtin.Environ.gnu
-    );
-
-    // add the build step
-    builder.default_step.dependOn(&kernel.step);
-    return kernel.getOutputPath();
-}
+const Builder = std.build.Builder;
 
 pub fn build(builder: *Builder) !void {
-    const osmium = builder.addExecutable("bin/osmium", "src/main.zig");
+    const osmium = builder.addExecutable("osmium", "kernel/boot.zig");
     const mode = builder.standardReleaseOptions();
+    
     try builder.makePath("bin");
 
-    // adds the kernel to the build
-    const kernel = build_kernel(builder, mode);
+    std.os.deleteFile("zig-cache" ++ std.os.path.sep_str ++ "qemu.log") catch |err| {
+        switch (err) {
+            error.FileNotFound => {},
+            else => return err,
+        }
+    };
+
+    builder.setInstallPrefix(".");
+
+    // adds kernel as an importable package
+    osmium.addPackagePath("osmium", "kernel/index.zig");
+   
+    // adds the root file to the kernel as an importable package
+    osmium.addPackagePath("@root", "src/main.zig");
     
-    // builds the high level stuff
     osmium.setLinkerScriptPath("kernel/linker.ld");
     osmium.setBuildMode(mode);
     osmium.setTarget(
@@ -41,44 +39,39 @@ pub fn build(builder: *Builder) !void {
         builtin.Os.freestanding,
         builtin.Environ.gnu
     );
-
-    // adds kernel as an importable package
-    osmium.addPackagePath("osmium", "kernel/index.zig"); 
-
+    
     // add the build step
     builder.default_step.dependOn(&osmium.step);
     builder.installArtifact(osmium);
 
+    qemu_step(builder, osmium.getOutputPath());
+}
 
-    const qemu = builder.step("qemu", "run the OS with qemu");
-    const qemu_debug = builder.step("qemu-debug", "run the OS with qemu and wait for debugger to attach");
+// adds qemu commands
+fn qemu_step(builder: *Builder, osmium: []const u8) void {
+    const qemu = builder.step("qemu", "run osmium with qemu");
+    const qemu_debug = builder.step("qemu-debug", "run osmium with qemu and wait for debugger to attach");
 
     const common_params = [][]const u8.{
         "qemu-system-i386",
-        "-kernel", kernel,
+        "-kernel", osmium,
         "-d", "cpu_reset",
         "-D", "bin/qemu.log"
     };
 
-    const debug_params = [][]const u8.{"-s", "-S"};
+    const debug_params = [][]const u8.{
+        "qemu-system-i386",
+        "-s", "-S", "-kernel",
+        osmium, "-d", "cpu_reset",
+        "-D", "bin/qemu.log"
+    };
 
-    var qemu_params = ArrayList([]const u8).init(builder.allocator);
-    var qemu_debug_params = ArrayList([]const u8).init(builder.allocator);
-    
-    for (common_params) |p| {
-        try qemu_params.append(p);
-        try qemu_debug_params.append(p);
-    }
-    
-    for (debug_params) |p| {
-        try qemu_debug_params.append(p);
-    }
-
-    const run_qemu = builder.addCommand(".", builder.env_map, qemu_params.toSlice());
-    const run_qemu_debug = builder.addCommand(".", builder.env_map, qemu_debug_params.toSlice());
+    const run_qemu = builder.addCommand(".", builder.env_map, common_params);
+    const run_qemu_debug = builder.addCommand(".", builder.env_map, debug_params);
 
     run_qemu.step.dependOn(builder.default_step);
     run_qemu_debug.step.dependOn(builder.default_step);
+
     qemu.dependOn(&run_qemu.step);
     qemu_debug.dependOn(&run_qemu_debug.step);
 }

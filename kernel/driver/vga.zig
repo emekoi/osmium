@@ -48,7 +48,7 @@ pub const height = 25;
 const ESCAPES = []u8.{ '\n', '\r', '\t' };
 
 // an array mapped to the textbuffer
-const buffer_ptr = @intToPtr([*]volatile u16, 0xB8000);
+var buffer_ptr = @intToPtr([*]volatile u16, 0xB8000);
 var buffer = buffer_ptr[0..width * height];
 
 // the current row of the textbuffer's cursor
@@ -77,7 +77,7 @@ fn entry(char: u8, color: u8) u16 {
 }
 
 fn moveCursor(x: usize, y: usize) void {
-    const pos = @intCast(y * width + x);
+    const pos = @intCast(u16, y * width + x);
     cpu.port.write(Port.Command, Command.High);
     cpu.port.write(Port.Data, @truncate(u8, pos >> 8));
     cpu.port.write(Port.Command, Command.Low);
@@ -86,7 +86,7 @@ fn moveCursor(x: usize, y: usize) void {
 
 // updates the cursor's positon
 fn updateCursor() void {
-    moveCursor(row, column);
+    moveCursor(column, row);
 }
 
 /// clears the textbuffer
@@ -97,9 +97,10 @@ pub fn clear() void {
 }
 
 /// init everything we need to use the textbuffer
-pub inline fn init() void {
+pub fn init() void {
     color_byte = entryColor(foreground_color, background_color);
     clear();
+    updateCursor();
 }
 
 /// sets the textbuffer's foreground color
@@ -159,22 +160,22 @@ pub fn getColumn() usize {
 
 // set the textbuffer entry at (x, y)
 fn putEntryAt(char: u8, x: usize, y: usize) void {
-    buffer[y * width + x] = char;
+    buffer[y * width + x] = entry(char, color_byte);
 }
 
-// const ESCAPES = []u8.{ '\n', '\r', '\t' };
 // handles our escape sequences
 fn handleEscape(char: u8) bool {
-    switch (c) {
+    switch (char) {
         '\n' => {
             row += 1;
             column = 0;
         },
         '\r' => {
             column = 0;
-            const offset = row * width + x;
-            inline for (buffer[offset..(offset + width + 1)]) |*byte| {
-                byte.* = entry(' ', Color.Brown);
+            const offset = row * width + column;
+            for (buffer[offset..(offset + width + 1)]) |*byte| {
+                // byte.* = entry(' ', byte_color);
+                byte.* = entry(' ', @enumToInt(Color.Brown));
             }
         },
         '\t' => {
@@ -204,11 +205,11 @@ pub fn putChar(char: u8) void {
         const blank = entry(' ', color_byte);
         const line = (height - 1) * width;
 
-        inline for (buffer[0..line]) |*byte, idx| {
+        for (buffer[0..line]) |*byte, idx| {
             byte.* = buffer[idx + 80];
         }
 
-        inline for (buffer[line..(width * height)]) |*byte| {
+        for (buffer[line..(width * height)]) |*byte| {
             byte.* = blank;
         }
 
@@ -219,6 +220,8 @@ pub fn putChar(char: u8) void {
     updateCursor();
 }
 
+
+/// write a string to the textbuffer
 pub fn write(data: []const u8) void {
     for (data) |char| {
         putChar(char);

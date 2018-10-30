@@ -45,22 +45,17 @@ fn panic(msg: []const u8, error_return_trace: ?*builtin.StackTrace) noreturn {
 }
 
 // setup useful stuff like the GDT,IDT, etc.
-fn setup() void {
+fn _start_body() void {
     vga.init();
-}
-
-// our kernel entry point
-export nakedcc fn _start() noreturn {
-    // set things up
-    @newStackCall(stack_slice, setup);
 
     // call and handle the return of different types of main functions
     switch (@typeId(@typeOf(root.main).ReturnType)) {
         builtin.TypeId.NoReturn, builtin.TypeId.Void => {
-            @newStackCall(stack_slice, root.main);
+            @noInlineCall(root.main);
+
         },
         builtin.TypeId.ErrorUnion => {
-            @newStackCall(stack_slice, root.main) catch |err| {
+            @noInlineCall(root.main) catch |err| {
                 // std.debug.warn("error: {}\n", @errorName(err));
                 if (false) {
                     if (@errorReturnTrace()) |trace| {
@@ -71,7 +66,12 @@ export nakedcc fn _start() noreturn {
         },
         else => @compileError("expected return type of main to be 'noreturn', 'void', or '!void'"),
     }
+}
 
-    // hang 
+// our kernel entry point
+export nakedcc fn _start() noreturn {
+    // set things up
+    @newStackCall(stack_slice, _start_body);
+    // hang
     driver.cpu.hang();
 }

@@ -4,7 +4,7 @@
 //  under the terms of the MIT license. See LICENSE for details.
 //
 
-const osmium = @import("osmium");
+const osmium = @import("../kernel/index.zig");
 const vga = osmium.driver.vga;
 
 pub fn main() void {
