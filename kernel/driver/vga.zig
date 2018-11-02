@@ -4,15 +4,15 @@
 //  under the terms of the MIT license. See LICENSE for details.
 //
 
-const cpu = @import("cpu.zig");
+const cpu = @import("../cpu/index.zig");
 
-/// commands to send to the vga text mode device
+/// commands to send to the vga device cursor
 pub const Command = enum(u8).{
     High = 0xE,
     Low = 0xF,
 };
 
-/// ports for talking to the vga device
+/// ports for talking to the vga device cursor
 pub const Port = enum(u16).{
     Command = 0x3D4,
     Data = 0x3D5,
@@ -78,10 +78,10 @@ fn entry(char: u8, color: u8) u16 {
 
 fn moveCursor(x: usize, y: usize) void {
     const pos = @intCast(u16, y * width + x);
-    cpu.port.write(Port.Command, Command.High);
-    cpu.port.write(Port.Data, @truncate(u8, pos >> 8));
-    cpu.port.write(Port.Command, Command.Low);
-    cpu.port.write(Port.Data, @truncate(u8, pos));
+    cpu.io.write(Port.Command, Command.High);
+    cpu.io.write(Port.Data, @truncate(u8, pos >> 8));
+    cpu.io.write(Port.Command, Command.Low);
+    cpu.io.write(Port.Data, @truncate(u8, pos));
 }
 
 // updates the cursor's positon

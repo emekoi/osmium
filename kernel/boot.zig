@@ -7,8 +7,9 @@
 const root = @import("@root");
 const builtin = @import("builtin");
 
-const driver = @import("driver/index.zig");
-const vga = driver.vga;
+const osmium = @import("index.zig");
+const vga = osmium.driver.vga;
+const cpu = osmium.cpu;
 
 // multiboot constants
 const ALIGN = 1 << 0;
@@ -41,7 +42,7 @@ fn panic(msg: []const u8, error_return_trace: ?*builtin.StackTrace) noreturn {
     vga.Color(vga.Color.Red, vga.Color.White);
     vga.write("\nKERNEL PANIC: ");
     vga.write(msg);
-    driver.cpu.hang();
+    cpu.hang();
 }
 
 // setup useful stuff like the GDT,IDT, etc.
@@ -73,5 +74,5 @@ export nakedcc fn _start() noreturn {
     // set things up
     @newStackCall(stack_slice, _start_body);
     // hang
-    driver.cpu.hang();
+    cpu.hang();
 }

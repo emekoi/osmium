@@ -9,3 +9,6 @@ pub const cpu = @import("cpu.zig");
 
 /// talking to the vga text buffer
 pub const vga = @import("vga.zig");
+
+/// talking to serial devices
+pub const serial = @import("serial.zig");

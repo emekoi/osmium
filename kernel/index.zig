@@ -6,3 +6,4 @@
 
 /// talking to hardware
 pub const driver = @import("driver/index.zig");
+pub const cpu = @import("cpu/index.zig");
