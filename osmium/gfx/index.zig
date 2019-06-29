@@ -8,7 +8,7 @@ const std = @import("std");
 const math = std.math;
 
 
-pub const Color = struct.{
+pub const Color = struct {
     const Self = @This();
     
     pub r: u8,
@@ -16,11 +16,11 @@ pub const Color = struct.{
     pub b: u8,
     
     pub fn new(r: u8, g: u8, b: u8) Self {
-        return Self.{ .r = r, .g = g, .b = b };
+        return Self { .r = r, .g = g, .b = b };
     }
 };
 
-pub const Rect = struct.{
+pub const Rect = struct {
     const Self = @This();
     
     pub x: u32,
@@ -29,11 +29,11 @@ pub const Rect = struct.{
     pub h: u32,
     
     pub fn new(x: u32, y: u32, w: u32, h: u32) Self {
-        return Self.{ .x = x, .y = y, .w = w, .h = h };
+        return Self { .x = x, .y = y, .w = w, .h = h };
     }
 };
 
-pub const BlendMode = enum.{
+pub const BlendMode = enum {
     Color,
     Add,
     Subtract,
@@ -44,18 +44,18 @@ pub const BlendMode = enum.{
     Difference
 };
 
-pub const DrawMode = struct.{
+pub const DrawMode = struct {
     const Self = @This();
     
     pub color: Color,
     pub blend: BlendMode,
 
     pub fn new(color: Color, blend: BlendMode) Self {
-        return Self.{ .color = color, .blend = blend };
+        return Self { .color = color, .blend = blend };
     }
 };
 
-pub const Transform = struct.{
+pub const Transform = struct {
     const Self = @This();
 
     pub ox: f32,
@@ -65,11 +65,11 @@ pub const Transform = struct.{
     pub sy: f32,
 
     pub fn new(ox: f32, oy: f32, r: f32, sx: f32, sy: f32) Self {
-        return Self.{ .ox = ox, .oy = oy, .r = r, .sx = sx, .sy = sy };
+        return Self { .ox = ox, .oy = oy, .r = r, .sx = sx, .sy = sy };
     }
 };
 
-pub const Canvas = struct.{
+pub const Canvas = struct {
     const Self = @This();
 
     pub mode: DrawMode,

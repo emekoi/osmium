@@ -7,12 +7,12 @@
 const cpu = @import("cpu.zig");
 
 // commands to send to serial devices
-const Command = enum(u8).{
+const Command = enum(u8) {
     LineEnableDLab = 0x80,
 };
 
 /// ports for talking to serial devices
-pub const Port = enum(u16).{
+pub const Port = enum(u16) {
     const Self = @This();
 
     Com1 = 0x3F8,

@@ -4,10 +4,10 @@
 //  under the terms of the MIT license. See LICENSE for details.
 //
 
-const root = @import("@root");
+const root = @import("root");
 const builtin = @import("builtin");
 
-const osmium = @import("index.zig");
+const osmium = @import("osmium.zig");
 const vga = osmium.driver.vga;
 const cpu = osmium.cpu;
 
@@ -18,21 +18,21 @@ const FLAGS = ALIGN | MEMINFO;
 const MAGIC = 0x1BADB002;
 
 // describes the multiboot header format
-const MultiBoot = packed struct.{
+const MultiBoot = packed struct {
     magic: c_long,
     flags: c_long,
     checksum: c_long,
 };
 
 // our multiboot header
-export var multiboot align(4) section(".multiboot") = MultiBoot.{
+export var multiboot align(4) linksection(".multiboot") = MultiBoot{
     .magic = MAGIC,
     .flags = FLAGS,
     .checksum = -(MAGIC + FLAGS),
 };
 
 // our kernel's stack (32 KiB)
-export var stack_bytes: [0x8000]u8 align(16) section(".bss") = undefined;
+export var stack_bytes: [0x8000]u8 align(16) linksection(".bss") = undefined;
 // an aligned slice of our kernel's stack (for @newStackCall)
 const stack_slice = stack_bytes[0..];
 
@@ -53,15 +53,13 @@ fn _start_body() void {
     switch (@typeId(@typeOf(root.main).ReturnType)) {
         builtin.TypeId.NoReturn, builtin.TypeId.Void => {
             @noInlineCall(root.main);
-
         },
         builtin.TypeId.ErrorUnion => {
             @noInlineCall(root.main) catch |err| {
-                // std.debug.warn("error: {}\n", @errorName(err));
-                if (false) {
-                    if (@errorReturnTrace()) |trace| {
-                        // std.debug.dumpStackTrace(trace);
-                    }
+                vga.write("error: {}\n", @errorName(err));
+                if (@errorReturnTrace()) |trace| {
+                    // std.debug.dumpStackTrace(trace);
+                    panic("", trace);
                 }
             };
         },

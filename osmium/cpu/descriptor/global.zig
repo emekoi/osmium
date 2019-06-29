@@ -5,12 +5,12 @@
 //
 
 /// the actual GDT
-pub const GDT = packed struct.{
+pub const GDT = packed struct {
     entries: [8]Entry,
 };
 
 /// an entry in the GDT
-const Entry = packed struct.{
+const Entry = packed struct {
     const Self = @This();
 
     limit_low: u16,

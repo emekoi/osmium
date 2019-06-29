@@ -7,19 +7,19 @@
 const cpu = @import("../cpu/index.zig");
 
 /// commands to send to the vga device cursor
-pub const Command = enum(u8).{
+pub const Command = enum(u8) {
     High = 0xE,
     Low = 0xF,
 };
 
 /// ports for talking to the vga device cursor
-pub const Port = enum(u16).{
+pub const Port = enum(u16) {
     Command = 0x3D4,
     Data = 0x3D5,
 };
 
 /// colors for outputting text to the vga device
-pub const Color = enum(u8).{
+pub const Color = enum(u8) {
     Black = 0,
     Blue = 1,
     Green = 2,
@@ -45,7 +45,7 @@ pub const width = 80;
 pub const height = 25;
 
 // escape codes for strings
-const ESCAPES = []u8.{ '\n', '\r', '\t' };
+const ESCAPES = []u8 { '\n', '\r', '\t' };
 
 // an array mapped to the textbuffer
 var buffer_ptr = @intToPtr([*]volatile u16, 0xB8000);

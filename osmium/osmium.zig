@@ -7,3 +7,9 @@
 /// talking to hardware
 pub const driver = @import("driver/index.zig");
 pub const cpu = @import("cpu/index.zig");
+
+// ngl, zig packages kinda suck
+// we need this so zig actually exports the symbols we need
+comptime {
+    _ = @import("boot.zig");
+}

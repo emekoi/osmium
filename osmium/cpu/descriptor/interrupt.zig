@@ -5,12 +5,12 @@
 //
 
 /// the actual IDT
-pub const IDT = packed struct.{
+pub const IDT = packed struct {
     entries: [256]Entry,
 };
 
 /// an entry in the IDT
-const Entry = packed struct.{
+const Entry = packed struct {
     const Self = @This();
 
     base_low: u16,
